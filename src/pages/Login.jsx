@@ -1,4 +1,3 @@
-// src/pages/Login.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -6,13 +5,12 @@ import {
   Button,
   CssBaseline,
   TextField,
-  FormControlLabel,
-  Checkbox,
   Link,
   Paper,
   Box,
   Grid,
   Typography,
+  Alert, // Import Alert component for error messages
 } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
@@ -24,21 +22,38 @@ const defaultTheme = createTheme();
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState(""); // State variable for error messages
   const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await axios.post("/api/users/login", {
-        email,
-        password,
-      });
+      const response = await axios.post(
+        "http://localhost:5000/api/users/login",
+        {
+          email,
+          password,
+        }
+      );
       // Save the token in localStorage
       login(response.data.token);
-      // Navigate to the dashboard
-      navigate("/dashboard");
+      // Navigate to the home page
+      navigate("/home");
     } catch (error) {
-      console.error("Error logging in", error);
+      if (error.response && error.response.status === 404) {
+        // User not found
+        setErrorMessage("User not found. Please check your email.");
+      } else if (error.response && error.response.status === 401) {
+        // Incorrect password
+        setErrorMessage("Incorrect password. Please check your password.");
+      } else {
+        // Other errors
+        setErrorMessage("An error occurred. Please try again.");
+      }
+      console.error(
+        "Error logging in",
+        error.response ? error.response.data : error.message
+      );
     }
   };
 
@@ -85,6 +100,11 @@ export default function Login() {
               onSubmit={handleSubmit}
               sx={{ mt: 1 }}
             >
+              {errorMessage && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {errorMessage}
+                </Alert>
+              )}
               <TextField
                 margin="normal"
                 required
@@ -108,10 +128,6 @@ export default function Login() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-              />
-              <FormControlLabel
-                control={<Checkbox value="remember" color="primary" />}
-                label="Remember me"
               />
               <Button
                 type="submit"

@@ -1,4 +1,3 @@
-// src/pages/Register.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -11,6 +10,7 @@ import {
   Box,
   Grid,
   Typography,
+  Alert, // Import Alert component for error messages
 } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
@@ -24,21 +24,35 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState(""); // State for error messages
   const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setErrorMessage(""); // Clear previous errors
+
+    // Check if passwords match
     if (password !== confirmPassword) {
-      console.error("Passwords do not match");
+      setErrorMessage("Passwords do not match");
       return;
     }
+
+    // Check if password length is at least 6 characters
+    if (password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long");
+      return;
+    }
+
     try {
-      const response = await axios.post("/api/users/register", {
-        firstName,
-        lastName,
-        email,
-        password,
-      });
+      const response = await axios.post(
+        "http://localhost:5000/api/users/register",
+        {
+          firstName,
+          lastName,
+          email,
+          password,
+        }
+      );
       // Check if the registration was successful
       if (response.status === 201) {
         console.log(response.data.message); // Optional: Show success message
@@ -46,6 +60,21 @@ export default function Register() {
         navigate("/login");
       }
     } catch (error) {
+      if (error.response) {
+        if (error.response.status === 409) {
+          // Email already registered
+          setErrorMessage(
+            "Email is already registered. Please use a different email."
+          );
+        } else if (error.response.status === 400) {
+          // Password validation failed or other client errors
+          setErrorMessage(error.response.data.message);
+        } else {
+          setErrorMessage("Error registering user. Please try again.");
+        }
+      } else {
+        setErrorMessage("Error registering user. Please try again.");
+      }
       console.error(
         "Error registering",
         error.response ? error.response.data : error.message
@@ -95,6 +124,11 @@ export default function Register() {
               onSubmit={handleSubmit}
               sx={{ mt: 1 }}
             >
+              {errorMessage && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {errorMessage}
+                </Alert>
+              )}
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <TextField
