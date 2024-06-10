@@ -20,7 +20,12 @@ const Projects = () => {
     // Fetch extracted text from backend
     const fetchProjects = async () => {
       try {
-        const response = await axios.get("/api/projects");
+        const token = localStorage.getItem("token"); // Get token from localStorage
+        const response = await axios.get("http://localhost:5000/api/projects", {
+          headers: {
+            Authorization: `Bearer ${token}`, // Set Authorization header
+          },
+        });
         setProjects(response.data);
       } catch (error) {
         console.error("Error fetching projects", error);
